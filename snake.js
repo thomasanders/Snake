@@ -1,94 +1,105 @@
-window.addEventListener('load', () => {
-    let points, snake, running, apple, move, nextMove;
-    const ctx = document.getElementById('snake-canvas').getContext('2d');
 
-    setDefault();
-    addKeyDownEventListener();
-    setInterval(renderFrame, 100);
+//board
+var blockSize = 25;
+var rows = 20;
+var cols = 20;
+var board;
+var context; 
 
-    function renderFrame() {
-        if (running) {
-            if (nextMove.x !== -move.x || nextMove.y !== -move.y) {
-                move = nextMove;
-            }
-            snake.push({x: processBound(getHead().x + move.x), y: processBound(getHead().y + move.y)});
-            if (snake.filter(square => square.x === getHead().x && square.y === getHead().y).length >= 2) {
-                setDefault();
-            } else {
+//snake head
+var snakeX = blockSize * 5;
+var snakeY = blockSize * 5;
 
-                if (apple.x === getHead().x && apple.y === getHead().y) {
-                    points++;
-                    apple = generateAppleLocation();
-                }
+var velocityX = 0;
+var velocityY = 0;
 
-                points <= 0 ? snake.shift() : points--;
-            }   
+var snakeBody = [];
+
+//food
+var foodX;
+var foodY;
+
+var gameOver = false;
+
+window.onload = function() {
+    board = document.getElementById("board");
+    board.height = rows * blockSize;
+    board.width = cols * blockSize;
+    context = board.getContext("2d"); //used for drawing on the board
+
+    placeFood();
+    document.addEventListener("keyup", changeDirection);
+    // update();
+    setInterval(update, 1000/10); //100 milliseconds
+}
+
+function update() {
+    if (gameOver) {
+        return;
+    }
+
+    context.fillStyle="black";
+    context.fillRect(0, 0, board.width, board.height);
+
+    context.fillStyle="red";
+    context.fillRect(foodX, foodY, blockSize, blockSize);
+
+    if (snakeX == foodX && snakeY == foodY) {
+        snakeBody.push([foodX, foodY]);
+        placeFood();
+    }
+
+    for (let i = snakeBody.length-1; i > 0; i--) {
+        snakeBody[i] = snakeBody[i-1];
+    }
+    if (snakeBody.length) {
+        snakeBody[0] = [snakeX, snakeY];
+    }
+
+    context.fillStyle="lime";
+    snakeX += velocityX * blockSize;
+    snakeY += velocityY * blockSize;
+    context.fillRect(snakeX, snakeY, blockSize, blockSize);
+    for (let i = 0; i < snakeBody.length; i++) {
+        context.fillRect(snakeBody[i][0], snakeBody[i][1], blockSize, blockSize);
+    }
+
+    //game over conditions
+    if (snakeX < 0 || snakeX > cols*blockSize || snakeY < 0 || snakeY > rows*blockSize) {
+        gameOver = true;
+        alert("Game Over");
+    }
+
+    for (let i = 0; i < snakeBody.length; i++) {
+        if (snakeX == snakeBody[i][0] && snakeY == snakeBody[i][1]) {
+            gameOver = true;
+            alert("Game Over");
         }
-
-        ctx.fillStyle='black';
-        ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height);
-
-        ctx.fillStyle='yellow';
-        snake.forEach(square => ctx.fillRect(square.x * 20, square.y * 20, 18, 18));
-
-        ctx.fillStyle='red';
-        ctx.fillRect(apple.x * 20, apple.y * 20, 18, 18)
     }
+}
 
-    function getHead() {
-        return snake[snake.length - 1];
+function changeDirection(e) {
+    if (e.code == "ArrowUp" && velocityY != 1) {
+        velocityX = 0;
+        velocityY = -1;
     }
-
-    function processBound(number) {
-        if (number > 19) {
-            return 0;
-        } else if (number < 0) {
-            return 19;
-        }
-        return number;
+    else if (e.code == "ArrowDown" && velocityY != -1) {
+        velocityX = 0;
+        velocityY = 1;
     }
-
-    function setDefault() {
-        running = false;
-        points = 2;
-        [move, nextMove] = Array(2).fill({x: 0, y: 0});
-        snake = [{x: 10, y: 10}];
-        apple = generateAppleLocation();
+    else if (e.code == "ArrowLeft" && velocityX != 1) {
+        velocityX = -1;
+        velocityY = 0;
     }
-
-    function generateAppleLocation() {
-        let location;
-        do {
-            location = {x: generateRandomNumber(19), y: generateRandomNumber(19)};    
-        } while(snake.filter(square => square.x === location.x && square.y === location.y).length > 0);
-        return location;
+    else if (e.code == "ArrowRight" && velocityX != -1) {
+        velocityX = 1;
+        velocityY = 0;
     }
+}
 
-    function generateRandomNumber(max) {
-        return Math.floor(Math.random() * (max + 1));
-    }
 
-    function addKeyDownEventListener() {
-        window.addEventListener('keydown', e => {
-            if (e.code.startsWith('Arrow')) {
-                e.preventDefault();
-                running = true;
-            }
-            switch (e.code) {
-                case 'ArrowLeft':
-                    nextMove = { x: -1, y: 0 };
-                    break;
-                case 'ArrowRight':
-                    nextMove = { x: 1, y: 0 };
-                    break;
-                case 'ArrowUp':
-                    nextMove = { x: 0, y: -1 };
-                    break;
-                case 'ArrowDown':
-                        nextMove = { x: 0, y: 1 };
-                        break;
-            }
-        })
-
-    }
-})
+function placeFood() {
+    //(0-1) * cols -> (0-19.9999) -> (0-19) * 25
+    foodX = Math.floor(Math.random() * cols) * blockSize;
+    foodY = Math.floor(Math.random() * rows) * blockSize;
+}
