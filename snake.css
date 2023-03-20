@@ -1,16 +1,4 @@
-html,
-
 body {
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
-}
-body {
-  height: 100%;
-  margin: 0;
-}
-
-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
